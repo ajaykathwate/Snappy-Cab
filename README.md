@@ -1,12 +1,12 @@
 # Snappy Cab - Cab Booking Backend REST API
 
-Snappy Cab is a cab booking backend REST API built using Spring Boot, Java, Kafka, and Maven, and follows the MVC architecture. It facilitates cab booking operations, user interactions, and driver management. The project utilizes MySQL for data storage.
+Snappy Cab is a cab booking backend REST API built using Spring Boot, Java, Twilo, and Maven, and follows the MVC architecture. It facilitates cab booking operations, user interactions, and driver management. The project utilizes MySQL for data storage.
 
 ## Technologies Used
 
 - Spring Boot
 - Java
-- Kafka
+- Twilo
 - Maven
 - MySQL
 - MVC Architecture
