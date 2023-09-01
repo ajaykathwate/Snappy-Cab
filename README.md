@@ -18,7 +18,6 @@ The project is organized into different modules and components:
 1. **User Module**: Manages user registration, login, and interactions.
 2. **Cab Module**: Handles cab information, availability, and booking.
 3. **Driver Module**: Manages driver details and assignments.
-4. **Kafka Integration**: Utilizes Kafka for real-time updates and notifications.
 
 ## Setup Instructions
 
