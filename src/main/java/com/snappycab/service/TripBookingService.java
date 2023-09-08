@@ -9,9 +9,9 @@ public interface TripBookingService {
 	
 	TripBookingResponse insertTripBooking(TripBookingRequest tripBookingRequest, Integer customerId);
 	
-	TripBookingResponse updateTripBooking(TripBookingRequest tripBookingRequest);
+	TripBookingResponse updateTripBooking(TripBookingRequest tripBookingRequest, Integer tripBookingId);
 	
-	TripBookingResponse deleteTripBooking(Integer tripBookingId);
+	void deleteTripBooking(Integer tripBookingId);
 	
 	List<TripBookingResponse> viewAllTripsByCustomer(Integer customerId);
 	

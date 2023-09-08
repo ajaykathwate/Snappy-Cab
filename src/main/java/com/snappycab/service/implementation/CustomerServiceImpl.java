@@ -85,6 +85,7 @@ public class CustomerServiceImpl implements CustomerService {
 		TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
 		
 		tripBooking.setDriver(driver);
+		tripBooking.setStatus(true);
 		
 		TripBooking tripBooked = this.tripBookingRepo.save(tripBooking);
 		

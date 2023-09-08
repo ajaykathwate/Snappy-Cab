@@ -35,7 +35,6 @@ public class Customer extends AbstractUser{
 	
 	public Customer(String userName, String password, String address, String mobileNumber, String email) {
 		super(userName, password, address, mobileNumber, email);
-		// TODO Auto-generated constructor stub
 	}
 
 }
