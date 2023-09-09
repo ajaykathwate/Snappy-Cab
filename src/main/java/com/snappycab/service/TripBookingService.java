@@ -14,7 +14,9 @@ public interface TripBookingService {
 	void deleteTripBooking(Integer tripBookingId);
 	
 	List<TripBookingResponse> viewAllTripsByCustomer(Integer customerId);
-	
-	String calculateBill(Integer customerId, Integer tripBookingId);
+
+//	String calculateBill(Integer customerId, Integer tripBookingId);
+
+	TripBookingResponse tripFinish(Integer tripBookingId);
 
 }

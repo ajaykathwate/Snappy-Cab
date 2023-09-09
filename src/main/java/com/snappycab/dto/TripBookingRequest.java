@@ -2,6 +2,7 @@ package com.snappycab.dto;
 
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.snappycab.entity.Customer;
 import com.snappycab.entity.Driver;
 
@@ -22,10 +23,13 @@ public class TripBookingRequest {
 	private String fromLocation;
 	@NotEmpty
 	private String toLocation;
-	
-	@NotEmpty
+
+	// set at runtime while booking trip
+	@JsonFormat(pattern = "hh:mm:ss a")
 	private LocalTime fromDataTime;
-	@NotEmpty
+
+	// set  when the trip is done
+	@JsonFormat(pattern = "hh:mm:ss")
 	private LocalTime toDataTime;
 	
 	@NotNull
@@ -33,11 +37,9 @@ public class TripBookingRequest {
 	
 	@NotEmpty
 	private float distanceInKm;
-	
-	@NotEmpty
+
 	private float bill;
-	
-	
+
 	private Customer customer;
 	
 	private Driver driver;

@@ -1,5 +1,7 @@
 package com.snappycab.service.implementation;
 
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,6 +11,7 @@ import com.snappycab.entity.Driver;
 import com.snappycab.entity.TripBooking;
 import com.snappycab.exceptions.NoTripBookingFoundForThisCustomerException;
 import com.snappycab.exceptions.ResourseNotFoundException;
+import com.snappycab.repository.DriverRepo;
 import org.modelmapper.ModelMapper;
 
 import com.snappycab.dto.TripBookingRequest;
@@ -18,13 +21,17 @@ import com.snappycab.repository.TripBookingRepo;
 import com.snappycab.service.TripBookingService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
+@Service
 public class TripBookingServiceImpl implements TripBookingService {
 	
 	private final TripBookingRepo tripBookingRepo;
 	
 	private final CustomerRepo customerRepo;
+
+	private final DriverRepo driverRepo;
 	
 	private final ModelMapper modelMapper;
 
@@ -37,7 +44,34 @@ public class TripBookingServiceImpl implements TripBookingService {
 
 		List<TripBooking> bookings =customer.getTripBookings();
 
+		// get drivers and assign driver who is available
+		List<Driver> drivers = this.driverRepo.findAll();
+		List<Driver> driverList = new ArrayList<>();
+		Driver driver = null;
+		for(Driver d: drivers){
+			if((d.isAvalibilityStatus() == true && d.getCab() != null) ){
+				System.out.println("added to driver list: " + d);
+				driver = d;
+				break;
+			}
+		}
+
+		// adding customer to tripbooking
 		tripBooking.setCustomer(customer);
+		// set localtime to trip booking
+		LocalTime localTime = LocalTime.now();
+		tripBooking.setFromDataTime(localTime);
+
+		// set driver to the trip & set driver status availavle = false
+		driver.setAvalibilityStatus(false);
+		// add this trip booking to the driver tripbooking list
+		List<TripBooking> trips = driver.getTripBookings();
+		trips.add(tripBooking);
+		tripBooking.setDriver(driver);
+
+		// calculate bill
+		Cab cab = driver.getCab();
+		tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
 
 		bookings.add(tripBooking);
 		TripBooking savedTripBooking = this.tripBookingRepo.save(tripBooking);
@@ -52,10 +86,14 @@ public class TripBookingServiceImpl implements TripBookingService {
 
 		tripBooking.setFromLocation(tripBookingRequest.getFromLocation());
 		tripBooking.setToLocation(tripBookingRequest.getToLocation());
-		tripBooking.setFromDataTime(tripBookingRequest.getFromDataTime());
-		tripBooking.setToDataTime(tripBookingRequest.getToDataTime());
-		tripBooking.setToDataTime(tripBookingRequest.getToDataTime());
-		tripBooking.setToDataTime(tripBookingRequest.getToDataTime());
+		tripBooking.setStatus(tripBookingRequest.isStatus());
+		tripBooking.setDistanceInKm(tripBookingRequest.getDistanceInKm());
+
+		// calculate bill
+		Driver driver = tripBooking.getDriver();
+		Cab cab = driver.getCab();
+		tripBooking.setDriver(driver);
+		tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
 
 		TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
 
@@ -83,24 +121,49 @@ public class TripBookingServiceImpl implements TripBookingService {
 		return allTripBokings;
 	}
 
+//	@Override
+//	public String calculateBill(Integer customerId, Integer tripBookingId) {
+//		// TODO Auto-generated method stub
+//
+//		TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking","tripBookingId", tripBookingId));
+//
+//		if(tripBooking.isStatus() == true){
+//			Driver driver = tripBooking.getDriver();
+//			Cab cab = driver.getCab();
+//
+//			tripBooking.setDriver(driver);
+//			tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
+//
+//			this.tripBookingRepo.save(tripBooking);
+//
+//		}
+//
+//		return "Total Trip Bill for Trip ID " + tripBooking.getTripBookingId() + " is : " + tripBooking.getBill();
+//	}
+
 	@Override
-	public String calculateBill(Integer customerId, Integer tripBookingId) {
-		// TODO Auto-generated method stub
+	public TripBookingResponse tripFinish(Integer tripBookingId) {
+		TripBooking tripBooking  = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
 
-		TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking","tripBookingId", tripBookingId));
-
+		// calculate bill
 		if(tripBooking.isStatus() == true){
 			Driver driver = tripBooking.getDriver();
 			Cab cab = driver.getCab();
 
 			tripBooking.setDriver(driver);
 			tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
-
+			// set cab status to true as this trip is finished
+			cab.setAvalibilityStatus(true);
+			driver.setAvalibilityStatus(true);
 			this.tripBookingRepo.save(tripBooking);
-
 		}
 
-		return "Total Trip Bill for Trip ID " + tripBooking.getTripBookingId() + " is : " + tripBooking.getBill();
+		// set finish time
+		LocalTime localTime = LocalTime.now();
+		tripBooking.setToDataTime(localTime);
+		TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
+
+		return this.modelMapper.map(tripBookingUpdated, TripBookingResponse.class);
 	}
 
 }
