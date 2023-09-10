@@ -1,5 +1,7 @@
 package com.snappycab.controller;
 
+import com.snappycab.dto.OtpRequest;
+import com.snappycab.dto.OtpResponse;
 import com.snappycab.dto.TripBookingRequest;
 import com.snappycab.dto.TripBookingResponse;
 import com.snappycab.payloads.ApiResponse;
@@ -25,14 +27,16 @@ public class TripBookingController {
 
     // insert tripbooking by customer with customerId
     @PostMapping("/customer/{customerId}")
-    public ResponseEntity<TripBookingResponse> insertTripBooking(@Valid @RequestBody TripBookingRequest tripBookingRequest, @PathVariable Integer customerId){
+    public ResponseEntity<TripBookingResponse> insertTripBooking(@Valid @RequestBody TripBookingRequest tripBookingRequest, @PathVariable Integer customerId) {
         TripBookingResponse trip = this.tripBookingService.insertTripBooking(tripBookingRequest, customerId);
         return new ResponseEntity<TripBookingResponse>(trip, HttpStatus.CREATED);
-    };
+    }
+
+    ;
 
     // update tripbooking by tripbooking id
     @PutMapping("/{tripBookingId}")
-    public ResponseEntity<TripBookingResponse> updateTripBooking(@Valid @RequestBody TripBookingRequest tripBookingRequest, @PathVariable Integer tripBookingId){
+    public ResponseEntity<TripBookingResponse> updateTripBooking(@Valid @RequestBody TripBookingRequest tripBookingRequest, @PathVariable Integer tripBookingId) {
 
         TripBookingResponse trip = this.tripBookingService.updateTripBooking(tripBookingRequest, tripBookingId);
 
@@ -41,32 +45,27 @@ public class TripBookingController {
 
     // delete tripbooking by tripBookingId
     @DeleteMapping("/{tripBookingId}")
-    public ResponseEntity<ApiResponse> deleteTripBookingByTripBookingId(@PathVariable Integer tripBookingId){
+    public ResponseEntity<ApiResponse> deleteTripBookingByTripBookingId(@PathVariable Integer tripBookingId) {
         this.tripBookingService.deleteTripBooking(tripBookingId);
         return new ResponseEntity<ApiResponse>(new ApiResponse("Trip Deleted Successfully...", true), HttpStatus.OK);
     }
 
     // view all trips by customer with customerId
     @GetMapping("/customer")
-    public ResponseEntity<List<TripBookingResponse>> viewAllTripsByCustomer(@RequestParam Integer customerId){
+    public ResponseEntity<List<TripBookingResponse>> viewAllTripsByCustomer(@RequestParam Integer customerId) {
         List<TripBookingResponse> trips = this.tripBookingService.viewAllTripsByCustomer(customerId);
         return new ResponseEntity<List<TripBookingResponse>>(trips, HttpStatus.OK);
     }
 
-    // calculate trip bill using customerId and tripBookingId
-//    @GetMapping("/customer/{customerId}")
-//    public ResponseEntity<String> calculateBill(@PathVariable Integer customerId, @RequestParam Integer tripBookingId){
-//
-//        String bill = this.tripBookingService.calculateBill(customerId, tripBookingId);
-//
-//        return new ResponseEntity<String>(bill, HttpStatus.OK);
-//    }
-
-
     @GetMapping("/customer/{tripBookingId}")
-    public ResponseEntity<TripBookingResponse> trioFinish( @PathVariable Integer tripBookingId){
+    public ResponseEntity<TripBookingResponse> trioFinish(@PathVariable Integer tripBookingId) {
         TripBookingResponse trip = this.tripBookingService.tripFinish(tripBookingId);
         return new ResponseEntity<TripBookingResponse>(trip, HttpStatus.OK);
+    }
+
+
+    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpRequest request){
+
     }
 
 }

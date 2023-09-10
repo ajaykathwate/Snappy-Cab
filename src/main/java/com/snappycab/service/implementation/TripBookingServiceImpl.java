@@ -1,169 +1,192 @@
 package com.snappycab.service.implementation;
 
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.snappycab.config.TwilioConfig;
+import com.snappycab.dto.*;
 import com.snappycab.entity.Cab;
 import com.snappycab.entity.Customer;
 import com.snappycab.entity.Driver;
 import com.snappycab.entity.TripBooking;
-import com.snappycab.exceptions.NoTripBookingFoundForThisCustomerException;
 import com.snappycab.exceptions.ResourseNotFoundException;
-import com.snappycab.repository.DriverRepo;
-import org.modelmapper.ModelMapper;
-
-import com.snappycab.dto.TripBookingRequest;
-import com.snappycab.dto.TripBookingResponse;
 import com.snappycab.repository.CustomerRepo;
+import com.snappycab.repository.DriverRepo;
 import com.snappycab.repository.TripBookingRepo;
 import com.snappycab.service.TripBookingService;
-
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+
+import java.text.DecimalFormat;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class TripBookingServiceImpl implements TripBookingService {
-	
-	private final TripBookingRepo tripBookingRepo;
-	
-	private final CustomerRepo customerRepo;
 
-	private final DriverRepo driverRepo;
-	
-	private final ModelMapper modelMapper;
+    private final TripBookingRepo tripBookingRepo;
 
-	@Override
-	public TripBookingResponse insertTripBooking(TripBookingRequest tripBookingRequest, Integer customerId) {
+    private final CustomerRepo customerRepo;
 
-		TripBooking tripBooking = this.modelMapper.map(tripBookingRequest, TripBooking.class);
+    private final DriverRepo driverRepo;
 
-		Customer customer = this.customerRepo.findById(customerId).orElseThrow(()-> new ResourseNotFoundException("Customer", "customerId", customerId));
+    private final ModelMapper modelMapper;
 
-		List<TripBooking> bookings =customer.getTripBookings();
+    @Override
+    public TripBookingResponse insertTripBooking(TripBookingRequest tripBookingRequest, Integer customerId) {
 
-		// get drivers and assign driver who is available
-		List<Driver> drivers = this.driverRepo.findAll();
-		List<Driver> driverList = new ArrayList<>();
-		Driver driver = null;
-		for(Driver d: drivers){
-			if((d.isAvalibilityStatus() == true && d.getCab() != null) ){
-				System.out.println("added to driver list: " + d);
-				driver = d;
-				break;
-			}
-		}
+        TripBooking tripBooking = this.modelMapper.map(tripBookingRequest, TripBooking.class);
 
-		// adding customer to tripbooking
-		tripBooking.setCustomer(customer);
-		// set localtime to trip booking
-		LocalTime localTime = LocalTime.now();
-		tripBooking.setFromDataTime(localTime);
+        Customer customer = this.customerRepo.findById(customerId).orElseThrow(() -> new ResourseNotFoundException("Customer", "customerId", customerId));
 
-		// set driver to the trip & set driver status availavle = false
-		driver.setAvalibilityStatus(false);
-		// add this trip booking to the driver tripbooking list
-		List<TripBooking> trips = driver.getTripBookings();
-		trips.add(tripBooking);
-		tripBooking.setDriver(driver);
+        List<TripBooking> bookings = customer.getTripBookings();
 
-		// calculate bill
-		Cab cab = driver.getCab();
-		tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
+        // get drivers and assign driver who is available
+        List<Driver> drivers = this.driverRepo.findAll();
+        List<Driver> driverList = new ArrayList<>();
+        Driver driver = null;
+        for (Driver d : drivers) {
+            if ((d.isAvalibilityStatus() == true && d.getCab() != null)) {
+                System.out.println("added to driver list: " + d);
+                driver = d;
+                break;
+            }
+        }
 
-		bookings.add(tripBooking);
-		TripBooking savedTripBooking = this.tripBookingRepo.save(tripBooking);
+        // adding customer to tripbooking
+        tripBooking.setCustomer(customer);
+        // set localtime to trip booking
+        LocalTime localTime = LocalTime.now();
+        tripBooking.setFromDataTime(localTime);
 
-		return this.modelMapper.map(savedTripBooking, TripBookingResponse.class);
-	}
+        // set driver to the trip & set driver status availavle = false
+        driver.setAvalibilityStatus(false);
+        // add this trip booking to the driver tripbooking list
+        List<TripBooking> trips = driver.getTripBookings();
+        trips.add(tripBooking);
+        tripBooking.setDriver(driver);
 
-	@Override
-	public TripBookingResponse updateTripBooking(TripBookingRequest tripBookingRequest, Integer tripBookingId) {
+        // calculate bill
+        Cab cab = driver.getCab();
+        tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
 
-		TripBooking tripBooking  = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
+        bookings.add(tripBooking);
+        TripBooking savedTripBooking = this.tripBookingRepo.save(tripBooking);
 
-		tripBooking.setFromLocation(tripBookingRequest.getFromLocation());
-		tripBooking.setToLocation(tripBookingRequest.getToLocation());
-		tripBooking.setStatus(tripBookingRequest.isStatus());
-		tripBooking.setDistanceInKm(tripBookingRequest.getDistanceInKm());
+        return this.modelMapper.map(savedTripBooking, TripBookingResponse.class);
+    }
 
-		// calculate bill
-		Driver driver = tripBooking.getDriver();
-		Cab cab = driver.getCab();
-		tripBooking.setDriver(driver);
-		tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
+    @Override
+    public TripBookingResponse updateTripBooking(TripBookingRequest tripBookingRequest, Integer tripBookingId) {
 
-		TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
+        TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(() -> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
 
-		return this.modelMapper.map(tripBookingUpdated, TripBookingResponse.class);
-	}
+        tripBooking.setFromLocation(tripBookingRequest.getFromLocation());
+        tripBooking.setToLocation(tripBookingRequest.getToLocation());
+        tripBooking.setStatus(tripBookingRequest.isStatus());
+        tripBooking.setDistanceInKm(tripBookingRequest.getDistanceInKm());
 
-	@Override
-	public void deleteTripBooking(Integer tripBookingId) {
-		TripBooking tripBooking  = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
+        // calculate bill
+        Driver driver = tripBooking.getDriver();
+        Cab cab = driver.getCab();
+        tripBooking.setDriver(driver);
+        tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
 
-		this.tripBookingRepo.delete(tripBooking);
+        TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
 
-	}
+        return this.modelMapper.map(tripBookingUpdated, TripBookingResponse.class);
+    }
 
-	@Override
-	public List<TripBookingResponse> viewAllTripsByCustomer(Integer customerId) {
-		// TODO Auto-generated method stub
+    @Override
+    public void deleteTripBooking(Integer tripBookingId) {
+        TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(() -> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
 
-		Customer customer = this.customerRepo.findById(customerId).orElseThrow(()-> new ResourseNotFoundException("Customer", "customerId", customerId));
+        this.tripBookingRepo.delete(tripBooking);
 
-		List<TripBooking> tripBookings = customer.getTripBookings();
+    }
 
-		List<TripBookingResponse> allTripBokings = tripBookings.stream().map(booking -> this.modelMapper.map(booking, TripBookingResponse.class)).collect(Collectors.toList());
+    @Override
+    public List<TripBookingResponse> viewAllTripsByCustomer(Integer customerId) {
+        // TODO Auto-generated method stub
 
-		return allTripBokings;
-	}
+        Customer customer = this.customerRepo.findById(customerId).orElseThrow(() -> new ResourseNotFoundException("Customer", "customerId", customerId));
 
-//	@Override
-//	public String calculateBill(Integer customerId, Integer tripBookingId) {
-//		// TODO Auto-generated method stub
-//
-//		TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking","tripBookingId", tripBookingId));
-//
-//		if(tripBooking.isStatus() == true){
-//			Driver driver = tripBooking.getDriver();
-//			Cab cab = driver.getCab();
-//
-//			tripBooking.setDriver(driver);
-//			tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
-//
-//			this.tripBookingRepo.save(tripBooking);
-//
-//		}
-//
-//		return "Total Trip Bill for Trip ID " + tripBooking.getTripBookingId() + " is : " + tripBooking.getBill();
-//	}
+        List<TripBooking> tripBookings = customer.getTripBookings();
 
-	@Override
-	public TripBookingResponse tripFinish(Integer tripBookingId) {
-		TripBooking tripBooking  = this.tripBookingRepo.findById(tripBookingId).orElseThrow(()-> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
+        List<TripBookingResponse> allTripBokings = tripBookings.stream().map(booking -> this.modelMapper.map(booking, TripBookingResponse.class)).collect(Collectors.toList());
 
-		// calculate bill
-		if(tripBooking.isStatus() == true){
-			Driver driver = tripBooking.getDriver();
-			Cab cab = driver.getCab();
+        return allTripBokings;
+    }
 
-			tripBooking.setDriver(driver);
-			tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
-			// set cab status to true as this trip is finished
-			cab.setAvalibilityStatus(true);
-			driver.setAvalibilityStatus(true);
-			this.tripBookingRepo.save(tripBooking);
-		}
 
-		// set finish time
-		LocalTime localTime = LocalTime.now();
-		tripBooking.setToDataTime(localTime);
-		TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
+    @Override
+    public TripBookingResponse tripFinish(Integer tripBookingId) {
+        TripBooking tripBooking = this.tripBookingRepo.findById(tripBookingId).orElseThrow(() -> new ResourseNotFoundException("TripBooking", "tripBookingId", tripBookingId));
 
-		return this.modelMapper.map(tripBookingUpdated, TripBookingResponse.class);
-	}
+        // calculate bill
+        if (tripBooking.isStatus() == true) {
+            Driver driver = tripBooking.getDriver();
+            Cab cab = driver.getCab();
+
+            tripBooking.setDriver(driver);
+            tripBooking.setBill(cab.getPerKmRate() * tripBooking.getDistanceInKm());
+            // set cab status to true as this trip is finished
+            cab.setAvalibilityStatus(true);
+            driver.setAvalibilityStatus(true);
+            this.tripBookingRepo.save(tripBooking);
+        }
+
+        // set finish time
+        LocalTime localTime = LocalTime.now();
+        tripBooking.setToDataTime(localTime);
+        TripBooking tripBookingUpdated = this.tripBookingRepo.save(tripBooking);
+
+        return this.modelMapper.map(tripBookingUpdated, TripBookingResponse.class);
+    }
+
+
+    private TwilioConfig twilioConfig;
+    Map<String, String> otpMap = new HashMap<>();
+
+
+    public OtpResponse sendSMS(OtpRequest otpRequest) {
+        OtpResponse otpResponse = null;
+        try {
+            PhoneNumber to = new PhoneNumber(otpRequest.getPhoneNumber());//to
+            PhoneNumber from = new PhoneNumber(twilioConfig.getTrialNumber()); // from
+            String otp = generateOTP();
+            String otpMessage = "Dear Customer , Your OTP is  " + otp + " for sending sms through Spring boot application. Thank You.";
+            Message message = Message
+                    .creator(to, from,
+                            otpMessage)
+                    .create();
+            otpMap.put(otpRequest.getUsername(), otp);
+            otpResponse = new OtpResponse(OtpStatus.DELIVERED, otpMessage);
+        } catch (Exception e) {
+            e.printStackTrace();
+            otpResponse = new OtpResponse(OtpStatus.FAILED, e.getMessage());
+        }
+        return otpResponse;
+    }
+
+    public String validateOtp(OtpValidationRequest otpValidationRequest) {
+        Set<String> keys = otpMap.keySet();
+        String username = null;
+        for(String key : keys)
+            username = key;
+        if (otpValidationRequest.getUsername().equals(username)) {
+            otpMap.remove(username,otpValidationRequest.getOtpNumber());
+            return "OTP is valid!";
+        } else {
+            return "OTP is invalid!";
+        }
+    }
+
+    private String generateOTP() {
+        return new DecimalFormat("000000")
+                .format(new Random().nextInt(999999));
+    }
 
 }
