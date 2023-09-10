@@ -1,6 +1,5 @@
 package com.snappycab;
 
-import com.snappycab.config.TwilioConfig;
 import com.twilio.Twilio;
 import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;

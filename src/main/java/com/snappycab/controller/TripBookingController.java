@@ -1,7 +1,5 @@
 package com.snappycab.controller;
 
-import com.snappycab.dto.OtpRequest;
-import com.snappycab.dto.OtpResponse;
 import com.snappycab.dto.TripBookingRequest;
 import com.snappycab.dto.TripBookingResponse;
 import com.snappycab.payloads.ApiResponse;
@@ -61,11 +59,6 @@ public class TripBookingController {
     public ResponseEntity<TripBookingResponse> trioFinish(@PathVariable Integer tripBookingId) {
         TripBookingResponse trip = this.tripBookingService.tripFinish(tripBookingId);
         return new ResponseEntity<TripBookingResponse>(trip, HttpStatus.OK);
-    }
-
-
-    public ResponseEntity<OtpResponse> sendOtp(@RequestBody OtpRequest request){
-
     }
 
 }

@@ -2,8 +2,6 @@ package com.snappycab.service;
 
 import java.util.List;
 
-import com.snappycab.dto.OtpRequest;
-import com.snappycab.dto.OtpResponse;
 import com.snappycab.dto.TripBookingRequest;
 import com.snappycab.dto.TripBookingResponse;
 
@@ -21,6 +19,5 @@ public interface TripBookingService {
 
 	TripBookingResponse tripFinish(Integer tripBookingId);
 
-	OtpResponse sendSMS(OtpRequest request);
 
 }
